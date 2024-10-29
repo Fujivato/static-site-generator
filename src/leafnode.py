@@ -16,5 +16,9 @@ class LeafNode(HTMLNode):
             return f" {self.value}"
         
         prop_string = f" {self.props_to_html()} "
+        if self.tag == "bi": 
+            tag_string = f"<b><i {prop_string}".strip()
+            return f"<{tag_string}>{self.value}</i</b>".strip()
+            
         tag_string = f"{self.tag} {prop_string}".strip()
         return f"<{tag_string}>{self.value}</{self.tag}>"

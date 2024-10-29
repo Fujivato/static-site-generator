@@ -8,6 +8,7 @@ from src.helpers import split_nodes_link
 from src.helpers import text_to_textnodes
 from src.helpers import markdown_to_blocks
 from src.helpers import block_to_block_type
+from src.helpers import text_to_children
 from src.helpers import markdown_to_html_node
 from src.textnode import TextType, TextNode
 from src.leafnode import LeafNode
@@ -74,6 +75,7 @@ class TestHelpers(unittest.TestCase):
     # [x] ` delimiter maps to type of CODE
     # [x] ** delimiter maps to type of BOLD
     # [x] * delimiter maps to type of ITALIC
+    # [-] *** delimeter maps to type of BOLD_ITALIC
     # [?] processes a list of nodes with different delimitiers
     
     def test_split_nodes_creates_node_from_delimiter(self):
@@ -132,14 +134,27 @@ class TestHelpers(unittest.TestCase):
         ]
         self.assertListEqual(expected_nodes, result)
     
+    def text_split_nodes_maps_triple_asterisk_to_text_type_bold_italic(self):
+        old_nodes = [
+            TextNode("I am some text with ***some emphasized text*** in it", TextType.TEXT)
+        ]
+        result = split_nodes_delimeter(old_nodes, "***", TextType.BOLD_ITALIC)
+        expected_nodes = [
+            TextNode(text="I am some text with ", text_type=TextType.TEXT),
+            TextNode(text="some emphasized text", text_type=TextType.BOLD_ITALIC),
+            TextNode(text=" in it", text_type=TextType.TEXT)
+        ]
+        self.assertListEqual(expected_nodes, result)
+
     def test_split_nodes_will_process_multiple_text_nodes(self):
         processed_nodes = []
         starting_nodes = [
             TextNode("I am some text with a `code block` in it and some **bold** text", TextType.TEXT),
             TextNode("I am some text with **some important text** in it", TextType.TEXT),
-            TextNode("I am some text with *some emphasized text* and some **bold** text in it", TextType.TEXT)
+            TextNode("I am some text with *some emphasized text* and some **bold** text in it", TextType.TEXT),
+            TextNode("I am some text with ***some emphasized text***  text in it", TextType.TEXT)
         ]
-        delimiters = ["`", "**", "*"]
+        delimiters = ["`", "***", "**", "*"]
         new_text_type = TextType.TEXT
         init_list = True
         # for each delimiter, process starting nodes
@@ -147,6 +162,8 @@ class TestHelpers(unittest.TestCase):
             match(item):
                 case "`":
                     new_text_type = TextType.CODE
+                case "***":
+                    new_text_type = TextType.BOLD_ITALIC
                 case "**":
                     new_text_type = TextType.BOLD
                 case "*":
@@ -171,6 +188,9 @@ class TestHelpers(unittest.TestCase):
             TextNode("some emphasized text", TextType.ITALIC),
             TextNode(" and some ", TextType.TEXT),
             TextNode("bold", TextType.BOLD),
+            TextNode(" text in it", TextType.TEXT),
+            TextNode("I am some text with ", TextType.TEXT),
+            TextNode("some emphasized text", TextType.BOLD_ITALIC),
             TextNode(" text in it", TextType.TEXT)
         ]
         self.assertListEqual(expected_nodes, processed_nodes)
@@ -626,6 +646,18 @@ will be treating as a paragraph of text i.e. the default option.
         self.assertEqual(expected, result)
     
     # Tests for markdown_to_html_node
+    
+    # Tests for markdown_block_to_html_blockquote
+    
+    # Tests for markdown_block_to_html_headings
+    
+    # Tests for markdown_block_to_html_code_block
+    
+    # Tests for markdown_block_to_html_ordered_list
+    
+    # Tests for markdown_block_to_html_unordered_list
+    
+    # Tests for text_to_children
     
 if __name__ == "__main__":
     unittest.main()
