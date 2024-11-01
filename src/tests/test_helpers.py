@@ -10,6 +10,7 @@ from src.helpers import markdown_to_blocks
 from src.helpers import block_to_block_type
 from src.helpers import text_to_children
 from src.helpers import markdown_to_html_node
+from src.helpers import extract_title
 from src.textnode import TextType, TextNode
 from src.leafnode import LeafNode
 from src.blocktype import BlockType
@@ -49,7 +50,7 @@ class TestHelpers(unittest.TestCase):
     def test_text_type_link_uses_url(self):
         text_node = TextNode(text = "Hello World", text_type = TextType.LINK, url = "http://www.sample.com")
         result = text_node_to_html_node(text_node)
-        expected_props = { "href": "http://www.sample.com" }
+        expected_props = { "href": "http://www.sample.com"}
         self.assertIsInstance(result, LeafNode)
         self.assertDictEqual(expected_props, result.props)
      
@@ -67,17 +68,7 @@ class TestHelpers(unittest.TestCase):
         self.assertDictEqual(expected_props, result.props)
     
     # Tests for split_nodes_delimeter
-    
-    # [x] splits a node based on a delimiter
-    # [x] create a new node based on text_type
-    # [x] create a new node with value of delimited type
-    # [x] non delimited text nodes retain type of TEXT
-    # [x] ` delimiter maps to type of CODE
-    # [x] ** delimiter maps to type of BOLD
-    # [x] * delimiter maps to type of ITALIC
-    # [-] *** delimeter maps to type of BOLD_ITALIC
-    # [?] processes a list of nodes with different delimitiers
-    
+       
     def test_split_nodes_creates_node_from_delimiter(self):
         old_nodes = [
             TextNode("This is text with a `code block` word in it", TextType.TEXT)
@@ -216,10 +207,6 @@ class TestHelpers(unittest.TestCase):
     
     # Tests for split_nodes_image
     
-    # [-] ignores IMAGE, CODE, ITALIC, BOLD AND LINK nodes
-    # [-] will convert a list of "TEXT" type nodes
-    # [-] will process a list of varied TextNodes
-    # [?] will preserve order of processed nodes
     def test_extract_image_ignores_image_nodes(self):
         images_nodes_list = [
             TextNode(text = "rick roll", url="https://i.imgur.com/aKaOqIh.gif", text_type=TextType.IMAGE),
@@ -337,12 +324,7 @@ class TestHelpers(unittest.TestCase):
         self.assertListEqual(expected_nodes, result)
     
     # Tests for split_nodes_link
-    
-    # [-] ignores IMAGE, CODE, ITALIC, BOLD AND LINK nodes
-    # [-] will convert a list of "TEXT" type nodes
-    # [-] will process a list of varied TextNodes
-    # [?] will preserve order of processed nodes
-    
+       
     def test_extract_link_ignores_image_nodes(self):
         links_nodes_list = [
             TextNode(text = "rick roll", url="https://i.imgur.com/aKaOqIh.gif", text_type=TextType.IMAGE),
@@ -512,11 +494,7 @@ class TestHelpers(unittest.TestCase):
         self.assertListEqual(expected_output, result)
     
     # Tests for markdown_to_blocks
-
-    # [-] will remove excessive new lines
-    # [-] will split paragraphs on \n\n
-    # [-] will remove trailing and leading whitespaces
-    
+   
     def test_markdown_to_blocks_removes_excessive_new_lines(self):
         md = """# This is a heading
 
@@ -571,14 +549,12 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         self.assertListEqual(expected, result)
 
     # Tests for block_to_block_type
-    
-    # [-] UL -> asterisk
-    # [-] UL -> Hypen
-    # [-] code
-    # [-] quote
-    # [-] OL
-    # [-] Paragraph
-    
+    def test_block_to_block_type_heading(self):
+        text = """# This is a heading with (brackets) and more [Brackets] and {more brackets}"""
+        result = block_to_block_type(text)
+        expected = "heading"
+        self.assertEqual(expected, result)
+       
     def test_block_to_block_type_ul_asterisk(self):
         text = """* This is the first list item in a list block
 * This is a list item
@@ -658,6 +634,25 @@ will be treating as a paragraph of text i.e. the default option.
     # Tests for markdown_block_to_html_unordered_list
     
     # Tests for text_to_children
+    
+    # Tests for extract_title
+    def test_extract_title_should_extract_title_when_present(self):
+        md_text = """# Hello Static Generator
+## This is my subtitle
+
+This is my markdown documemt with some spurious content.
+""" 
+        result = extract_title(md_text)
+        expected = "Hello Static Generator"
+        self.assertEqual(expected, result)
+    
+    def test_extract_title_should_raise_exception_when_no_title(self):
+        md_text = """## This is my subtitle
+
+This is my markdown documemt with some spurious content.
+""" 
+        with self.assertRaises(Exception):
+            result = extract_title(md_text)
     
 if __name__ == "__main__":
     unittest.main()

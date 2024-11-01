@@ -47,8 +47,8 @@ class TestParentNode(unittest.TestCase):
         
     def test_to_html_renders_plain_text(self):
         text_node_three = LeafNode(value="the lazy dog")
-        text_node_two = LeafNode(value="fox jumps over")
-        text_node_one = LeafNode(value="The quick brown")
+        text_node_two = LeafNode(value="fox jumps over ")
+        text_node_one = LeafNode(value="The quick brown ")
         node = ParentNode(tag = "div", children=[text_node_one, text_node_two, text_node_three])
         expected="""<div>The quick brown fox jumps over the lazy dog</div>"""
         result = node.to_html()

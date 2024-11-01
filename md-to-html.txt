@@ -8,3 +8,4 @@ text                          <p></p>
 *                             <i></i>
 **                            <b></b>
 >                             <blockquote></blockquote>
+[ ]                           <input type="checkbox" />

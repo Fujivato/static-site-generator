@@ -19,11 +19,11 @@ class ParentNode(HTMLNode):
         html_string += f"<{tag_string}>"
         
         for child in self.children:         
-            html_string += child.to_html()
+            html_string += f"{child.to_html()}"
         
-        html_string = html_string.replace("> ",">").replace(" <", "<")
+        #html_string = html_string.replace("> ",">").replace(" <", "<")
         html_string = html_string.strip() 
         html_string += f"</{self.tag}>"
         
-        return html_string    
+        return html_string.replace("  ", " ").strip()    
         

@@ -13,12 +13,12 @@ class LeafNode(HTMLNode):
             raise ValueError("All leaf nodes must have a value")
         
         if self.tag is None or self.tag == "":
-            return f" {self.value}"
+            return f"{self.value}"
         
         prop_string = f" {self.props_to_html()} "
         if self.tag == "bi": 
-            tag_string = f"<b><i {prop_string}".strip()
-            return f"<{tag_string}>{self.value}</i</b>".strip()
+            tag_string = f" <b><i {prop_string}".strip()
+            return f"{tag_string}>{self.value}</i></b>".strip()
             
         tag_string = f"{self.tag} {prop_string}".strip()
         return f"<{tag_string}>{self.value}</{self.tag}>"

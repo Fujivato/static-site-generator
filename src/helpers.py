@@ -1,4 +1,6 @@
 import re
+import os
+import shutil
 from src.leafnode import LeafNode
 from src.textnode import TextType, TextNode
 from src.parentnode import ParentNode
@@ -119,10 +121,10 @@ def split_nodes_link(old_nodes):
 # returns a list of TextNodes with respective text_type
 def text_to_textnodes(text):
     if text == "": return []
-    
+       
     text_node = TextNode(text = f"{text}", text_type = TextType.TEXT)
     node_list = [text_node]
-    
+
     # convert text level items to TextNodex
     delimiter_list = ["***", "**", "*", "`"]
     for symbol in delimiter_list:
@@ -174,7 +176,7 @@ def block_to_block_type(md_block):
     # conditions:
     
     # 1. detect headings # 1-6
-    regex_heading = "^([#]{1,6})[\s,\w,\d]+$"
+    regex_heading = "^([#]{1,6})([ ]{1})(.)+"
     is_heading = re.findall(regex_heading, md_block)
     if len(is_heading) > 0: return BlockType.HEADING.value
     
@@ -203,7 +205,7 @@ def block_to_block_type(md_block):
 
         # 4. unordered list block
         # 1 space for top level list, 3 spaces for nested list
-        if item[0:1] == "*" or item[0:1] == "-": ul_block.append((item, True))
+        if item[0:2] == "* " or item[0:2] == "- ": ul_block.append((item, True))
         else: ul_block.append((item, False))
         
         # 5. ordered list block
@@ -241,7 +243,7 @@ def text_to_children(text):
     
     # 2.1 determine the type of block (with existing function)
     block_type = block_to_block_type(text)
-       
+
     # 2.2 based on type of block, create a new HTMLNode with proper data
     match(block_type): 
         # unordered lists
@@ -273,11 +275,11 @@ def text_to_children(text):
 def markdown_block_to_html_unordered_list(text):  
     li_children = []
     for line in text.split('\n'):
-        node_list = text_to_textnodes(line.replace(line[:1], "").strip())
+        node_list = text_to_textnodes(line[1:].strip())
         child_nodes = []
         for node in node_list:
             child_nodes.append(text_node_to_html_node(node))
-            li_children.append(ParentNode(tag="li", children=child_nodes))
+        li_children.append(ParentNode(tag="li", children=child_nodes))
     return ParentNode(tag="ul", children=li_children)
 
 # 3. extract OLs
@@ -293,7 +295,7 @@ def markdown_block_to_html_ordered_list(text):
             node_list = text_to_textnodes(li_text)
             for node in node_list: 
                 child_nodes.append(text_node_to_html_node(node))
-                li_children.append(ParentNode(tag="li", children=child_nodes))
+            li_children.append(ParentNode(tag="li", children=child_nodes))
     return ParentNode(tag="ol", children=li_children)
 
 # 4. extract code blocks
@@ -318,8 +320,8 @@ def markdown_block_to_html_headings(text):
         node_list = text_to_textnodes(heading_text)
         for node in node_list:
             child_nodes.append(text_node_to_html_node(node))
-            parent_node = ParentNode(tag=f"h{heading_size}", children=child_nodes)
-            html_nodes.append(parent_node)
+        parent_node = ParentNode(tag=f"h{heading_size}", children=child_nodes)
+        html_nodes.append(parent_node)
     return html_nodes
 
 # 6. extract quote blocks
@@ -328,7 +330,7 @@ def markdown_block_to_html_headings(text):
 def markdown_block_to_html_blockquote(text):
     html_nodes = []
     for line in text.split('\n'):
-        node_list = text_to_textnodes(line.replace(">",""))
+        node_list = text_to_textnodes(line.replace(">","").strip())
         for node in node_list:
             html_nodes.append(text_node_to_html_node(node))
     return ParentNode(tag = "blockquote", children=html_nodes)
@@ -345,3 +347,51 @@ def markdown_to_html_node(markdown):
         html_nodes = html_nodes + text_to_children(block) 
 
     return ParentNode(tag = "div", children=html_nodes)
+
+# extract the markdown main heading to serve as page title
+def extract_title(markdown):    
+    regex_heading = "^([#]{1})([ ]{1})(.)+$"
+    text_lines = markdown.split('\n')
+    h1_heading = []
+    
+    for line in text_lines:
+        result = re.findall(regex_heading, line)
+        if len(result) > 0:
+            h1_heading.append(line)
+        
+    if len(h1_heading) == 0:
+        raise Exception("No H1 heading found")
+    return h1_heading[0].replace("#","").strip()
+
+# generate the html content page from markdown
+def generate_page(from_path, template_path, dest_path):
+    print(f"Generating page from {from_path} to {dest_path} using {template_path}")
+    
+    # read markdown from file:
+    md_reader = open(from_path)
+    markdown = md_reader.read()
+    
+    template_reader = open(template_path)
+    template = template_reader.read()
+    
+    html_string = markdown_to_html_node(markdown).to_html().replace("  ", " ")
+    page_title = extract_title(markdown)
+    
+    template = template.replace("{{ Title }}", page_title).replace("{{ Content }}", html_string)
+    with open(f"{dest_path}", "w") as f:
+        f.write(template)
+
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+    dir_list = os.listdir(dir_path_content)
+    
+    for object in dir_list:
+        object_name = os.path.join(dir_path_content, object)
+        dest_object = os.path.join(dest_dir_path, f"{os.path.splitext(os.path.basename(object))[0]}.html")
+        dest_dir = os.path.join(dest_dir_path, object)
+        
+        if os.path.isfile(object_name):
+            generate_page(object_name, template_path, dest_object)          
+        else: 
+            if not os.path.exists(os.path.join(dest_dir_path, object)):
+                os.mkdir(os.path.join(dest_dir_path, object))
+            generate_pages_recursive(f"{object_name}", template_path, f"{dest_dir}")
