@@ -1,20 +1,6 @@
 import os
 import shutil
-from src.textnode import TextNode, TextType
-from src.htmlnode import HTMLNode
-from src.helpers import generate_pages_recursive, generate_page, markdown_to_html_node, text_to_children, markdown_to_html_node, block_to_block_type, markdown_to_blocks, text_to_textnodes, split_nodes_link, split_nodes_image, text_node_to_html_node, split_nodes_delimeter, extract_markdown_images, extract_markdown_links
-
-def md_load_test():
-    file_name = "example-markdown.md"
-    reader = open(file_name)
-    md_text = reader.read()
-    
-    # debug output
-    #print(md_text)
-    
-    # convert md document to html node tree
-    result = markdown_to_html_node(md_text)
-    print(result.get_node_tree())
+from src.helpers import generate_pages_recursive
 
 def copy_directory(source_dir, dest_dir):   
     dir_list = os.listdir(source_dir)
@@ -46,15 +32,11 @@ def copy_assets_to_public_dir():
     copy_directory(source_dir, dest_dir)
     print("Finished copying assets.")  
 
-def main():
-    # test converting md docs to html node trees
-    #md_load_test()
-    
+def main():   
     # copy assets from 'static' folder to 'public
     copy_assets_to_public_dir()
     
     # create html page from markdown
-    #generate_page("content/index.md", "template.html", "public/index.html")
     generate_pages_recursive("content", "template.html", "public")
 
 main()

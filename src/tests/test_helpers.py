@@ -9,14 +9,21 @@ from src.helpers import text_to_textnodes
 from src.helpers import markdown_to_blocks
 from src.helpers import block_to_block_type
 from src.helpers import text_to_children
+from src.helpers import markdown_block_to_html_code_block
+from src.helpers import markdown_block_to_html_ordered_list 
+from src.helpers import markdown_block_to_html_unordered_list
+from src.helpers import markdown_block_to_html_blockquote
+from src.helpers import markdown_block_to_html_headings
 from src.helpers import markdown_to_html_node
 from src.helpers import extract_title
 from src.textnode import TextType, TextNode
 from src.leafnode import LeafNode
-from src.blocktype import BlockType
+from src.parentnode import ParentNode
 
 class TestHelpers(unittest.TestCase):
+    
     # Tests for text_node_to_html_node
+    
     def test_text_type_text_renders_no_tag(self):      
         text_node = TextNode(text = "Hello World", text_type = TextType.TEXT)
         result = text_node_to_html_node(text_node)
@@ -187,6 +194,7 @@ class TestHelpers(unittest.TestCase):
         self.assertListEqual(expected_nodes, processed_nodes)
        
     # Tests for extract_markdown_images
+    
     def test_extract_markdown_images_will_extract_from_text(self):
         text = "This is text with a ![rick roll](https://i.imgur.com/aKaOqIh.gif) and ![obi wan](https://i.imgur.com/fJRm4Vk.jpeg)"
         result = extract_markdown_images(text)
@@ -196,6 +204,7 @@ class TestHelpers(unittest.TestCase):
         self.assertListEqual(expected_output, result)
         
     # Tests for extract_markdown_links
+    
     def test_extract_markdown_images_will_extract_from_text(self):
         text = "This is text with a link [to boot dev](https://www.boot.dev) and [to youtube](https://www.youtube.com/@bootdotdev)"
         result = extract_markdown_links(text)
@@ -549,6 +558,7 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         self.assertListEqual(expected, result)
 
     # Tests for block_to_block_type
+    
     def test_block_to_block_type_heading(self):
         text = """# This is a heading with (brackets) and more [Brackets] and {more brackets}"""
         result = block_to_block_type(text)
@@ -570,7 +580,7 @@ This is a paragraph of text. It has some **bold** and *italic* words inside of i
         result = block_to_block_type(text)
         expected = "unordered_list"
         self.assertEqual(expected, result)
-    
+       
     def test_block_to_block_type_code(self):
         text = """```This is my spectacular code block in C++. I hope you
     appreciate its magnificence.```"""
@@ -623,19 +633,303 @@ will be treating as a paragraph of text i.e. the default option.
     
     # Tests for markdown_to_html_node
     
+    def test_markdown_to_html_node_converts_markdown_with_code_to_html_nodes(self):
+        example_md = """# This is my markdown document
+
+With a bit of free text here.
+
+```
+and a code block print() me
+```"""
+        result = markdown_to_html_node(example_md)
+        child_nodes = [
+            ParentNode(tag="h1", children=[LeafNode(value="This is my markdown document")]),
+            LeafNode(value="With a bit of free text here."),
+            ParentNode(tag="code", children=[LeafNode(value="and a code block print() me")])
+        ]    
+        expected_parent = ParentNode(tag="div", children=child_nodes)
+        self.assertEqual(expected_parent, result)
+    
+    def test_markdown_to_html_node_converts_markdown_with_lists_to_html_nodes(self):
+        example_md = """
+* list item one
+- list item two *italic text*
+* list item three **bold text**
+- list item four
+* **bold text** list item five"""
+
+        result = markdown_to_html_node(example_md)
+        child_nodes = [
+            ParentNode(tag="ul", children=[
+                ParentNode(tag="li", children=[
+                    LeafNode(value="list item one")
+                ]),
+                ParentNode(tag="li", children=[
+                    LeafNode(value="list item two "),
+                    LeafNode(tag="i", value="italic text")
+                ]),
+                ParentNode(tag="li", children=[
+                    LeafNode(value="list item three "),
+                    LeafNode(tag="b", value="bold text")
+                ]),
+                ParentNode(tag="li", children=[
+                    LeafNode(value="list item four")
+                ]),
+                ParentNode(tag="li", children=[
+                    LeafNode(tag="b", value="bold text"),
+                    LeafNode(value=" list item five"),
+                ]),
+            ])
+        ]
+        expected_parent = ParentNode(tag="div", children=child_nodes)
+        self.assertEqual(expected_parent, result)
+
     # Tests for markdown_block_to_html_blockquote
+    
+    def test_markdown_block_to_html_blockquote(self):
+        example_md = """> this is the first line
+> of my amazing quote that everyone
+> should memorize to help with their
+> own life journey"""
+        result = markdown_block_to_html_blockquote(example_md)
+        expected = ParentNode("blockquote", children=[
+                LeafNode(value="this is the first line"),
+                LeafNode(value="of my amazing quote that everyone"),
+                LeafNode(value="should memorize to help with their"),
+                LeafNode(value="own life journey")
+        ])
+        self.assertEqual(expected, result)
     
     # Tests for markdown_block_to_html_headings
     
+    def test_markdown_block_to_html_headings_h1(self):
+        example_md = """# Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h1", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_markdown_block_to_html_headings_h2(self):
+        example_md = """## Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h2", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_markdown_block_to_html_headings_h3(self):
+        example_md = """### Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h3", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_markdown_block_to_html_headings_h4(self):
+        example_md = """#### Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h4", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_markdown_block_to_html_headings_h5(self):
+        example_md = """##### Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h5", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_markdown_block_to_html_headings_h6(self):
+        example_md = """###### Markdown Document Heading"""
+        result = markdown_block_to_html_headings(example_md)
+        expected = [
+            ParentNode("h6", children=[
+                LeafNode(value="Markdown Document Heading")
+            ])
+        ]
+        self.assertEqual(expected, result)
+      
     # Tests for markdown_block_to_html_code_block
+    
+    def test_markdown_block_to_html_code_block(self):
+        example_md = """```
+print("Hello World")
+```"""
+        result = markdown_block_to_html_code_block(example_md)
+        expected = ParentNode("code", children=[
+                LeafNode(value='print("Hello World")')
+        ])
+        self.assertEqual(expected, result)
     
     # Tests for markdown_block_to_html_ordered_list
     
+    def test_markdown_block_to_html_ordered_list(self):
+        example_md = """1. List Item One
+2. List Item Two
+3. List Item Three *Notes*
+4. List Item Four"""
+        result = markdown_block_to_html_ordered_list(example_md)
+        child_nodes = [
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item One")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Two")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Three "),
+                LeafNode(tag="i", value="Notes")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Four")
+            ])
+        ]
+        expected = ParentNode("ol", children=child_nodes)
+        self.assertEqual(expected, result)
+
     # Tests for markdown_block_to_html_unordered_list
+    
+    def test_markdown_block_to_html_unordered_list(self):
+        example_md = """* List Item One
+- List Item Two
+* List Item Three *Notes*
+- List Item Four"""
+        result = markdown_block_to_html_unordered_list(example_md)
+        child_nodes = [
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item One")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Two")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Three "),
+                LeafNode(tag="i", value="Notes")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Four")
+            ])
+        ]
+        expected = ParentNode("ul", children=child_nodes)
+        self.assertEqual(expected, result)
     
     # Tests for text_to_children
     
+    def test_text_to_children_headings(self):
+        md_heading = """# This is a heading"""
+        result_heading = text_to_children(md_heading)
+        expected_heading = [
+            ParentNode("h1", children=[
+                LeafNode(value="This is a heading")
+            ]) 
+        ]           
+        self.assertListEqual(result_heading, expected_heading)
+
+    def test_text_to_children_ul_lists(self):
+        md_list = """- List Item One
+- List Item Two
+- List Item Three
+- List Item Four"""
+        result_list = text_to_children(md_list)
+        expected_list = [
+            ParentNode(tag = "ul", children=[
+                ParentNode(tag="li", children=[
+                LeafNode(value="List Item One")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Two")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Three")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Four")
+            ])])
+        ]
+        self.assertListEqual(result_list, expected_list)
+    
+    def test_text_to_children_ol_lists(self):
+        md_list = """1. List Item One
+2. List Item Two
+3. List Item Three
+4. List Item Four"""
+        result_list = text_to_children(md_list)
+        expected_list = [
+            ParentNode(tag = "ol", children=[
+                ParentNode(tag="li", children=[
+                LeafNode(value="List Item One")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Two")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Three")
+            ]),
+            ParentNode(tag="li", children=[
+                LeafNode(value="List Item Four")
+            ])])
+        ]
+        self.assertListEqual(result_list, expected_list)
+    
+    def test_text_to_children_quotes(self):
+        example_md = """> this is the first line
+> of my amazing quote that everyone
+> should memorize to help with their
+> own life journey"""
+        result = text_to_children(example_md)
+        expected = [
+            ParentNode("blockquote", children=[
+                LeafNode(value="this is the first line"),
+                LeafNode(value="of my amazing quote that everyone"),
+                LeafNode(value="should memorize to help with their"),
+                LeafNode(value="own life journey")
+            ])
+        ]
+        self.assertListEqual(expected, result)
+    
+    def test_text_to_children_code(self):
+        example_md = """```
+print("Hello World")
+```"""
+        result = text_to_children(example_md)
+        expected = [
+            ParentNode("code", children=[
+                LeafNode(value='print("Hello World")')
+            ])
+        ]
+        self.assertEqual(expected, result)
+    
+    def test_text_to_children_images(self):
+        example_md = "![Image](https://www.google.com/image.jpeg)"
+        result = text_to_children(example_md)
+        expected = [
+            LeafNode(tag="img", props={"src": "https://www.google.com/image.jpeg", "alt": "Image"})
+        ]
+        self.assertListEqual(expected, result)
+    
+    def test_text_to_children_links(self):
+        example_md = "[link in it](https://www.google.com)"
+        result = text_to_children(example_md)
+        expected = [
+            LeafNode(tag="a", value="link in it", props={"href": "https://www.google.com"})
+        ]
+        self.assertListEqual(expected, result)
+    
     # Tests for extract_title
+    
     def test_extract_title_should_extract_title_when_present(self):
         md_text = """# Hello Static Generator
 ## This is my subtitle

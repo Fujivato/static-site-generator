@@ -5,8 +5,10 @@ class LeafNode(HTMLNode):
         super().__init__(value = value, tag = tag, props = props)
 
     def __eq__(self, other):
-        
-        return True
+        same_tag = self.tag == other.tag
+        same_value = self.value == other.value
+        same_props = self.props == other.props
+        return same_tag and same_value and same_props
      
     def to_html(self):
         if self.value is None:

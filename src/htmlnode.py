@@ -16,7 +16,14 @@ class HTMLNode():
                 html_string += f'{attr}="{self.props[attr]}" '
             
         return html_string.strip()
-        
+    
+    def __eq__(self, other):
+        same_tag = self.tag == other.tag
+        same_value = self.value == other.value
+        same_children = self.children == other.children
+        same_props = self.props == other.props
+        return same_tag and same_value and same_children and same_props
+    
     def __generate_node_tree__(self, node, level = 1):
         if node.tag is None: tree_string = "<text>"
         else: tree_string = f"<{node.tag}>"

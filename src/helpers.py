@@ -154,27 +154,27 @@ def text_to_textnodes(text):
 # a list of "markdowm" blocks ready for processing
 def markdown_to_blocks(markdown):
     raw_blocks = markdown.split('\n\n')
-    
+
     # remove any empty or newline entries
     for item in raw_blocks:
         if item == "" or item == '\n':
             raw_blocks.remove(item)
-    
+
     # remove any leading or trailing whitespace:
     for i in range(0, len(raw_blocks)):
         raw_blocks[i] = raw_blocks[i].strip()
         inner_items = raw_blocks[i].split('\n')
         for j in range(0, len(inner_items)):
             inner_items[j] = inner_items[j].strip()
-        raw_blocks[i]  = '\n'.join(inner_items)
-        
+        raw_blocks[i]  = '\n'.join(inner_items).strip()
+
     return raw_blocks
 
 # accepts a list of "markdown" blocks and assigns them to a
 # supported BlockType enum
 def block_to_block_type(md_block):
     # conditions:
-    
+
     # 1. detect headings # 1-6
     regex_heading = "^([#]{1,6})([ ]{1})(.)+"
     is_heading = re.findall(regex_heading, md_block)
@@ -216,8 +216,8 @@ def block_to_block_type(md_block):
         except ValueError:
             continue
     
-    is_quote_block = list(filter(lambda x: x[1] == False, quote_block))
-    is_ul_block = list(filter(lambda x: x[1] == False, ul_block))
+    is_quote_block = list(filter(lambda x: x[1] == True, quote_block))
+    is_ul_block = list(filter(lambda x: x[1] == True, ul_block))
     ol_compare = [] 
     
     for i in range(1, len(ol_block) + 1):
@@ -226,8 +226,8 @@ def block_to_block_type(md_block):
     ol_block_cardinals = list(map(lambda x: x[0], ol_block))
     ol_block_contiguous = len(ol_block_cardinals) > 0 and ol_compare == ol_block_cardinals
 
-    if len(is_quote_block) == 0: return BlockType.QUOTE.value
-    if len(is_ul_block) == 0: return BlockType.UNORDERED_LIST.value
+    if len(is_quote_block) > 0: return BlockType.QUOTE.value
+    if len(is_ul_block) > 0: return BlockType.UNORDERED_LIST.value
     if ol_block_contiguous == True: return BlockType.ORDERED_LIST.value
     
     # if none of the above conditions are met, block is a normal paragraph
@@ -341,11 +341,11 @@ def markdown_to_html_node(markdown):
   
     # 1. split the markdown into blocks
     md_blocks = markdown_to_blocks(markdown)
-    
+
     # 2. loop over each block
     for block in md_blocks:        
         html_nodes = html_nodes + text_to_children(block) 
-
+    
     return ParentNode(tag = "div", children=html_nodes)
 
 # extract the markdown main heading to serve as page title
@@ -378,9 +378,11 @@ def generate_page(from_path, template_path, dest_path):
     page_title = extract_title(markdown)
     
     template = template.replace("{{ Title }}", page_title).replace("{{ Content }}", html_string)
+    
     with open(f"{dest_path}", "w") as f:
         f.write(template)
 
+# recursively scan the "content" directory and convert markdown pages to html
 def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
     dir_list = os.listdir(dir_path_content)
     
